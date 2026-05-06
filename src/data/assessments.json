@@ -1,0 +1,159 @@
+[
+  {
+    "slug": "is-my-child-an-introvert",
+    "title": "Is My Child An Introvert?",
+    "subtitle": "Twelve gentle questions to clarify temperament. Not a diagnosis. A starting point.",
+    "questions": [
+      "After a busy day, does your child need quiet alone time before they can talk about it?",
+      "At parties, does your child watch first, then join (or not join at all)?",
+      "Does your child have one or two close friends rather than a wide group?",
+      "Does your child do their best thinking alone or in small groups?",
+      "Does your child get overwhelmed by loud, fast environments?",
+      "Does your child speak less in big groups but a lot one-on-one?",
+      "Does your child need warning before transitions?",
+      "Does your child pick up on the moods of people around them quickly?",
+      "Does your child prefer deep conversations to small talk, even with adults?",
+      "Does your child have a rich inner world (imaginary games, daydreams, complex pretend play)?",
+      "Does your child get cranky after long social days even when the day went well?",
+      "Does your child need more sleep than peers their age?"
+    ]
+  },
+  {
+    "slug": "is-my-child-highly-sensitive",
+    "title": "Is My Child Highly Sensitive?",
+    "subtitle": "Twelve questions adapted from the temperament research literature.",
+    "questions": [
+      "Does your child startle easily?",
+      "Does your child notice subtle changes in your mood?",
+      "Does your child complain about clothing tags, sock seams, or scratchy fabric?",
+      "Does your child get overwhelmed in noisy environments (gyms, cafeterias, malls)?",
+      "Does your child notice small details others miss?",
+      "Does your child react strongly to bright lights or strong smells?",
+      "Does your child cry easily over things others would brush off?",
+      "Does your child take a long time to warm up to new people?",
+      "Does your child ask deep questions for their age?",
+      "Does your child get rattled by quick changes in plan?",
+      "Does your child feel things very intensely (joy and sadness both)?",
+      "Does your child need extra recovery time after exciting events?"
+    ]
+  },
+  {
+    "slug": "school-anxiety-screen",
+    "title": "School Anxiety Screen",
+    "subtitle": "A gentle screen for school-related anxiety. If most are 'often,' talk to a child clinician.",
+    "questions": [
+      "Does your child complain of stomach aches or headaches on school mornings?",
+      "Does your child resist getting out of bed for school but not on weekends?",
+      "Does your child cry, freeze, or panic at drop-off?",
+      "Does your child ask repetitive questions about what will happen at school?",
+      "Has your child started asking to stay home in the past month?",
+      "Does your child report feeling sick at school but the nurse can't find anything?",
+      "Has your child's appetite changed on school days?",
+      "Does your child have trouble falling asleep on Sunday nights?",
+      "Does your child mention specific worries (a teacher, lunch, recess, a kid)?",
+      "Does your child seem fine at home and 'shut down' only at school?"
+    ]
+  },
+  {
+    "slug": "after-school-restoration-needs",
+    "title": "After-School Restoration Needs",
+    "subtitle": "How big is your child's recovery tank, really? Helps shape an after-school routine.",
+    "questions": [
+      "How long does your child usually need before they can talk after school? (Less than 15 min, 15 to 30, more than 30, all evening)",
+      "What do they reach for first when they get home? (Snack, screen, bed, pet, alone time, you)",
+      "How does your child react to questions right after pickup? (Answers freely, snaps, goes silent, melts down)",
+      "When does the meltdown usually hit? (In the car, doorway, at dinner, at bedtime, none)",
+      "What helps fastest? (Quiet alone time, a snack, going outside, snuggling, screens)",
+      "How do weekends compare to school days? (Much calmer, somewhat calmer, the same, harder)",
+      "How is bedtime on school nights? (Easy, slow, a battle, very hard)",
+      "How does Friday afternoon compare to Monday afternoon? (Same, worse, better)",
+      "How long does the recovery take after a school event (field trip, play, party)? (Hours, a day, several days)",
+      "How is your child's appetite during the school week? (Normal, picky, low, high)"
+    ]
+  },
+  {
+    "slug": "iep-vs-504-readiness",
+    "title": "IEP or 504: Which Are We Heading Toward?",
+    "subtitle": "A practical screen. Not a substitute for an evaluation. Use to gather your thoughts before you call the school.",
+    "questions": [
+      "Has your child been diagnosed with anxiety, ADHD, autism, learning disability, or sensory processing disorder?",
+      "Is your child's anxiety affecting their access to instruction (missing class, refusing to attend, cannot perform on tests)?",
+      "Has the school already tried general accommodations and they didn't work?",
+      "Does your child need specially designed instruction (not just accommodations), for example explicit instruction in a learning skill?",
+      "Has the teacher mentioned concerns more than once?",
+      "Is the gap between potential and performance widening?",
+      "Have you put concerns in writing to the school yet?",
+      "Do you know the difference between accommodations and modifications?",
+      "Do you know your state's IEP timeline (referral to evaluation to meeting)?",
+      "Are you ready for a meeting where the team disagrees with you?"
+    ]
+  },
+  {
+    "slug": "sensory-profile-quick-screen",
+    "title": "Sensory Profile Quick Screen",
+    "subtitle": "Light, medium, or heavy sensory needs? A starting point, not a diagnostic tool.",
+    "questions": [
+      "Does your child cover their ears in normal-noise environments?",
+      "Does your child crash into furniture, jump from heights, or seek heavy hugs?",
+      "Does your child gag at certain food textures?",
+      "Does your child refuse certain clothing on principle (jeans, socks, tags)?",
+      "Does your child avoid messy play (paint, sand, glue)?",
+      "Does your child seek messy play more than peers (always covered in something)?",
+      "Does your child react strongly to bright lights or fluorescents?",
+      "Does your child have trouble sitting still during meals or homework?",
+      "Does your child melt down in busy stores or events?",
+      "Does your child sleep better with weight on top of them?"
+    ]
+  },
+  {
+    "slug": "parent-self-care-check",
+    "title": "Parent Self-Care Check",
+    "subtitle": "You cannot pour from an empty cup. Ten honest questions for the parent of a sensitive child.",
+    "questions": [
+      "When did you last sleep seven straight hours?",
+      "When did you last leave the house alone, with no errand attached?",
+      "Do you have one person you can text honestly about your child without being judged?",
+      "Have you eaten three real meals today?",
+      "Are you carrying your child's anxiety in your body (jaw, shoulders, stomach)?",
+      "When did you last move your body in a way that felt good?",
+      "Are you saying yes to school events you don't have the bandwidth for?",
+      "Have you had a check-up in the last year?",
+      "Do you have a therapist, coach, mentor, or oracle reader you can lean on?",
+      "Are you the only adult holding the emotional load of your child's school life?"
+    ]
+  },
+  {
+    "slug": "social-battery-baseline",
+    "title": "Social Battery Baseline",
+    "subtitle": "How much social fuel does your kid actually have? Helps with playdates, parties, and weekend planning.",
+    "questions": [
+      "After a one-hour playdate, how is your child? (Energized, neutral, tired, melting down)",
+      "After a birthday party, how is your child? (Same options)",
+      "After a full school day, how is your child by 5 p.m.?",
+      "Can your child do back-to-back social events in one day? (Yes, sometimes, no, never)",
+      "How does your child respond to a surprise visitor? (Happy, neutral, withdraws, melts down)",
+      "How long can your child play in a group of three or more before needing a break? (Minutes, an hour, a few hours, all day)",
+      "Does your child prefer parallel play (next to a friend) or interactive play (with a friend)?",
+      "How does your child handle 'just one more' requests at the end of a play date?",
+      "How does your child describe the day after a sleepover?",
+      "How long does it take your child to recover from a school field trip?"
+    ]
+  },
+  {
+    "slug": "gentle-bedtime-fit",
+    "title": "Gentle Bedtime Fit",
+    "subtitle": "Is your bedtime routine actually serving a sensitive nervous system? Ten honest questions.",
+    "questions": [
+      "Does the bedtime routine start at the same time most nights?",
+      "Are screens off at least 60 minutes before sleep?",
+      "Is the bedroom cool, dark, and quiet?",
+      "Does your child have a wind-down activity that doesn't involve a screen?",
+      "Is your child eating dinner more than two hours before sleep?",
+      "Does your child have a way to discharge worries (worry jar, talk time, journal) before lights-out?",
+      "Is there a transitional object or comfort item available?",
+      "Are you available for a brief check-in after lights-out?",
+      "Is the wake time consistent on weekends as well as weekdays?",
+      "Does your child wake feeling rested most days?"
+    ]
+  }
+]

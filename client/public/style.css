@@ -1,0 +1,183 @@
+/* A Quiet Classroom — Archetype D scroll design.
+   Palette per scope: bg #FAF8F5, text #1A2330, accent #7080B4, bio card #EEF0F8. */
+
+@font-face {
+  font-family: "Playfair Display";
+  font-weight: 700;
+  font-display: swap;
+  src: url("https://quiet-classroom.b-cdn.net/fonts/PlayfairDisplay-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Playfair Display";
+  font-weight: 600;
+  font-display: swap;
+  src: url("https://quiet-classroom.b-cdn.net/fonts/PlayfairDisplay-SemiBold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Serif Pro";
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://quiet-classroom.b-cdn.net/fonts/SourceSerifPro-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Serif Pro";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://quiet-classroom.b-cdn.net/fonts/SourceSerifPro-Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://quiet-classroom.b-cdn.net/fonts/DMSans-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 500;
+  font-display: swap;
+  src: url("https://quiet-classroom.b-cdn.net/fonts/DMSans-Medium.woff2") format("woff2");
+}
+
+:root {
+  --bg: #FAF8F5;
+  --text: #1A2330;
+  --accent: #7080B4;
+  --bio: #EEF0F8;
+  --rule: rgba(26, 35, 48, 0.12);
+  --max: 720px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Source Serif Pro", Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 700px) { body { font-size: 16px; } }
+
+a { color: var(--text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--accent); }
+
+.container { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+.container-wide { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+h1, h2, h3, .display { font-family: "Playfair Display", Georgia, serif; font-weight: 600; line-height: 1.2; color: var(--text); }
+h1 { font-size: 2.4rem; margin: 1.4em 0 0.6em; }
+h2 { font-size: 1.7rem; margin: 1.6em 0 0.5em; border-top: 1px solid var(--rule); padding-top: 1.4em; }
+h3 { font-size: 1.25rem; margin: 1.4em 0 0.4em; }
+
+p, ul, ol { margin: 0 0 1.1em; }
+ul, ol { padding-left: 1.4em; }
+
+blockquote { margin: 1.5em 0; padding: 0.8em 1.2em; border-left: 3px solid var(--accent); background: var(--bio); font-style: italic; }
+
+.site-header { position: sticky; top: 0; background: rgba(250, 248, 245, 0.94); backdrop-filter: blur(8px); z-index: 50; border-bottom: 1px solid var(--rule); }
+.site-header--overlay { background: transparent; border-bottom-color: transparent; }
+.site-header__row { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; max-width: 1100px; margin: 0 auto; }
+.site-header__brand { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.35rem; text-decoration: none; }
+.site-header__nav { display: flex; gap: 28px; font-family: "DM Sans", system-ui, sans-serif; font-size: 0.95rem; }
+.site-header__nav a { text-decoration: none; }
+@media (max-width: 700px) {
+  .site-header__nav { gap: 14px; font-size: 0.85rem; }
+  .site-header__nav a { padding: 4px 0; }
+}
+
+/* Full-viewport hero */
+.hero {
+  position: relative; height: 100vh; min-height: 520px; width: 100%;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  overflow: hidden;
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.62) 100%);
+}
+.hero__inner {
+  position: absolute; inset: auto 0 0 0; padding: 60px 24px 80px;
+  color: #fff; max-width: 900px; margin: 0 auto; z-index: 2;
+}
+.hero__kicker { font-family: "DM Sans", sans-serif; text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.78rem; opacity: 0.92; }
+.hero__title { font-family: "Playfair Display", serif; font-weight: 700; color: #fff; font-size: clamp(1.9rem, 4.4vw, 3.4rem); line-height: 1.15; margin: 0.3em 0 0.4em; }
+.hero__meta { font-family: "DM Sans", sans-serif; font-size: 0.9rem; opacity: 0.9; }
+
+/* Floating dot nav (article scroll) */
+.dotnav { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 30; display: flex; flex-direction: column; gap: 14px; }
+.dotnav a { display: block; width: 9px; height: 9px; border-radius: 50%; background: rgba(26,35,48,0.25); }
+.dotnav a:hover, .dotnav a.is-active { background: var(--accent); }
+@media (max-width: 900px) { .dotnav { display: none; } }
+
+/* Article body */
+.article { padding: 56px 0 64px; }
+.article__tldr { background: var(--bio); border-radius: 6px; padding: 18px 22px; font-style: italic; margin: 0 0 32px; }
+.article__byline { font-family: "DM Sans", sans-serif; font-size: 0.92rem; color: rgba(26,35,48,0.78); margin: 0 0 32px; display: flex; gap: 14px; flex-wrap: wrap; }
+.article__byline a { text-decoration: underline; }
+
+.bio-card { background: var(--bio); border-radius: 8px; padding: 24px 28px; margin: 48px 0; display: flex; gap: 22px; align-items: flex-start; }
+.bio-card img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.bio-card h4 { margin: 0 0 6px; font-family: "Playfair Display", serif; font-size: 1.15rem; }
+.bio-card p { margin: 0 0 8px; font-size: 0.97rem; }
+.bio-card a { font-family: "DM Sans", sans-serif; font-size: 0.92rem; }
+
+.affiliate-block { border: 1px solid var(--rule); border-radius: 6px; padding: 18px 22px; margin: 28px 0; }
+.affiliate-block__label { font-family: "DM Sans", sans-serif; text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; color: var(--accent); margin: 0 0 6px; }
+
+.faq h3 { margin-bottom: 0.2em; }
+.faq__q { font-weight: 600; font-family: "Playfair Display", serif; }
+
+.tag-pill { display: inline-block; padding: 2px 10px; border: 1px solid var(--rule); border-radius: 999px; font-family: "DM Sans", sans-serif; font-size: 0.78rem; margin: 0 6px 6px 0; color: rgba(26,35,48,0.78); }
+
+.article-grid { display: grid; gap: 28px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 32px 0 64px; }
+.article-card { display: flex; flex-direction: column; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 18px rgba(26, 35, 48, 0.06); transition: transform 200ms ease; }
+.article-card:hover { transform: translateY(-2px); }
+.article-card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; background: #ddd; }
+.article-card__body { padding: 18px 22px 22px; }
+.article-card__body h3 { font-size: 1.1rem; margin: 0 0 8px; }
+.article-card__body p { font-size: 0.95rem; margin: 0 0 10px; color: rgba(26, 35, 48, 0.78); }
+.article-card__body a { text-decoration: none; }
+.article-card__meta { font-family: "DM Sans", sans-serif; font-size: 0.78rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; }
+
+.intro-block { padding: 80px 0 24px; }
+.intro-block__kicker { font-family: "DM Sans", sans-serif; text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.8rem; color: var(--accent); }
+.intro-block__title { font-family: "Playfair Display", serif; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; margin: 18px 0 22px; }
+.intro-block__lede { font-size: 1.15rem; max-width: 600px; }
+
+.cta-strip { background: var(--bio); padding: 36px 0; margin: 48px 0; }
+.cta-strip h3 { margin: 0 0 8px; }
+.cta-strip p { margin: 0 0 14px; }
+.cta-strip a.btn { display: inline-block; padding: 11px 22px; background: var(--accent); color: #fff; border-radius: 999px; font-family: "DM Sans", sans-serif; font-weight: 500; text-decoration: none; }
+.cta-strip a.btn:hover { background: #5b6fa5; color: #fff; }
+
+.assessment-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); padding: 24px 0 64px; }
+.assessment-card { background: #fff; border-radius: 8px; padding: 22px 24px; box-shadow: 0 4px 18px rgba(26, 35, 48, 0.06); }
+.assessment-card h3 { margin: 0 0 6px; }
+.assessment-card p { margin: 0 0 10px; color: rgba(26, 35, 48, 0.8); }
+
+.assessment-form { background: #fff; border-radius: 8px; padding: 28px 32px; box-shadow: 0 4px 18px rgba(26, 35, 48, 0.06); }
+.assessment-form ol { padding-left: 0; list-style: none; counter-reset: q; }
+.assessment-form li { counter-increment: q; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.assessment-form li::before { content: counter(q) ". "; font-family: "Playfair Display", serif; color: var(--accent); margin-right: 6px; }
+.assessment-form .answers { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; font-family: "DM Sans", sans-serif; font-size: 0.9rem; }
+.assessment-form button { background: var(--accent); color: #fff; border: 0; padding: 10px 22px; border-radius: 999px; font-family: "DM Sans", sans-serif; font-size: 1rem; cursor: pointer; margin-top: 18px; }
+
+.herb-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); padding: 16px 0 56px; }
+.herb-card { background: #fff; border-radius: 8px; padding: 18px 22px; box-shadow: 0 3px 14px rgba(26, 35, 48, 0.05); }
+.herb-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.herb-card .latin { font-style: italic; color: rgba(26, 35, 48, 0.6); font-size: 0.85rem; }
+.herb-card .cat { font-family: "DM Sans", sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin: 6px 0; }
+.herb-card p { font-size: 0.93rem; margin: 6px 0 8px; }
+.herb-card a.shop { display: inline-block; padding: 6px 14px; background: var(--accent); color: #fff; border-radius: 999px; text-decoration: none; font-family: "DM Sans", sans-serif; font-size: 0.82rem; }
+
+.category-pill { display: inline-block; padding: 6px 14px; margin: 4px 6px 4px 0; background: var(--bio); color: var(--text); border-radius: 999px; text-decoration: none; font-family: "DM Sans", sans-serif; font-size: 0.85rem; }
+.category-pill:hover { background: var(--accent); color: #fff; }
+
+.site-footer { background: #f3f0ea; padding: 60px 0 36px; margin-top: 80px; }
+.site-footer__cols { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.site-footer h4 { font-family: "Playfair Display", serif; font-size: 1.05rem; margin: 0 0 10px; }
+.site-footer ul { list-style: none; padding: 0; margin: 0; }
+.site-footer li { margin: 6px 0; font-family: "DM Sans", sans-serif; font-size: 0.9rem; }
+.site-footer__small { margin-top: 32px; font-size: 0.78rem; color: rgba(26, 35, 48, 0.65); font-family: "DM Sans", sans-serif; }

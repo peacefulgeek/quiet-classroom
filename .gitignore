@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+content/heroes-tmp/
+*.zip
+*.tar.gz
+.cache/

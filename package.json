@@ -1,0 +1,23 @@
+{
+  "name": "aquietclassroom",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A Quiet Classroom: for parents of introverted, anxious, and highly sensitive children. By The Oracle Lover.",
+  "scripts": {
+    "dev": "node src/server/index.mjs",
+    "build": "echo 'no client build step. server renders HTML directly'",
+    "start": "NODE_ENV=production node src/server/index.mjs",
+    "seed": "node scripts/bulk-seed.mjs",
+    "generate:batch": "node scripts/run-pending-batch.mjs",
+    "verify:asins": "node scripts/verify-asins.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "audit": "node scripts/post-build-audit.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "node-cron": "^3.0.3",
+    "openai": "^4.73.0",
+    "sharp": "^0.33.5"
+  }
+}
