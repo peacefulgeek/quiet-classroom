@@ -63,7 +63,13 @@ async function worker(wid) {
       article.tldr = (text.match(/^_(.+?)_$/m) || text.match(/^\*(.+?)\*$/m) || ["", ""])[1] || "";
       article.readingTime = Math.max(4, Math.round(text.split(/\s+/).length / 220));
       article.dateModified = Date.now();
-      if (PUBLISH) { article.status = "published"; article.publishedAt = Date.now(); }
+      if (PUBLISH) {
+        article.status = "published";
+        article.publishedAt = Date.now();
+      } else if (process.env.STATUS) {
+        // e.g. STATUS=draft to mark generated bodies as gated drafts
+        article.status = process.env.STATUS;
+      }
       await writeArticle(article);
       ok++;
       console.log(`  [w${wid}] ok in ${((Date.now()-t0)/1000).toFixed(0)}s`);

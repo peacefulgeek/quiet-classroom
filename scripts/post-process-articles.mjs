@@ -138,7 +138,7 @@ let processed = 0, gateOk = 0, gateWarn = 0;
 for (const f of files) {
   const fp = path.join(DIR, f);
   const a = JSON.parse(await fs.readFile(fp, "utf8"));
-  if (a.status !== "published" || !a.body) continue;
+  if ((a.status !== "published" && a.status !== "draft") || !a.body) continue;
 
   let body = a.body;
   body = applySubs(body);

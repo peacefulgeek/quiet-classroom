@@ -74,7 +74,7 @@ for (const f of files) {
   const fp = path.join(ARTICLES_DIR, f);
   const a = JSON.parse(await fs.readFile(fp, "utf8"));
   if (ONLY.length && !ONLY.includes(a.slug)) continue;
-  if (a.status !== "published" && !FORCE) continue;
+  if (a.status !== "published" && a.status !== "draft" && !FORCE) continue;
   if (a.heroUrl && a.heroUrl.includes("quiet-classroom.b-cdn.net") && !FORCE) {
     skipped++;
     continue;
