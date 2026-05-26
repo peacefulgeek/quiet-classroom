@@ -18,16 +18,30 @@ const ARTICLES_DIR = path.join(ROOT, "content/articles");
 
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || process.env.PUBLISH_FIRST || "10", 10);
 const PUBLISH = (process.env.PUBLISH || "true") !== "false";
+const PUBLISHED_CAP = parseInt(process.env.PUBLISHED_CAP || "100", 10);
 
 const files = (await fs.readdir(ARTICLES_DIR)).filter(f => f.endsWith(".json"));
 const queue = [];
+let currentlyPublished = 0;
 for (const f of files) {
   const a = JSON.parse(await fs.readFile(path.join(ARTICLES_DIR, f), "utf8"));
+  if (a.status === "published") currentlyPublished++;
   if (a.status === "queued" && (!a.body || a.body.length < 200)) queue.push(a);
 }
 queue.sort((a, b) => (a.queuedAt || 0) - (b.queuedAt || 0));
-const work = queue.slice(0, BATCH_SIZE);
-console.log(`queued total=${queue.length} processing=${work.length} publish=${PUBLISH}`);
+
+// If publishing, cap the slice so we never exceed PUBLISHED_CAP
+let effectiveBatch = BATCH_SIZE;
+if (PUBLISH) {
+  const room = Math.max(0, PUBLISHED_CAP - currentlyPublished);
+  effectiveBatch = Math.min(BATCH_SIZE, room);
+  if (effectiveBatch === 0) {
+    console.log(`cap reached: published=${currentlyPublished} cap=${PUBLISHED_CAP}; nothing to do`);
+    process.exit(0);
+  }
+}
+const work = queue.slice(0, effectiveBatch);
+console.log(`published=${currentlyPublished}/${PUBLISHED_CAP} queued total=${queue.length} processing=${work.length} publish=${PUBLISH}`);
 
 const CONCURRENCY = parseInt(process.env.CONCURRENCY || "5", 10);
 let ok = 0, fail = 0, idx = 0;

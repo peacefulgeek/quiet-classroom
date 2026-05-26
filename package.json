@@ -10,10 +10,14 @@
     "start": "NODE_ENV=production node src/server/index.mjs",
     "seed": "node scripts/bulk-seed.mjs",
     "generate:batch": "node scripts/run-pending-batch.mjs",
-    "verify:asins": "node scripts/verify-asins.mjs",
-    "sitemap": "node scripts/generate-sitemap.mjs",
-    "audit": "node scripts/post-build-audit.mjs"
+    "post-process": "node scripts/post-process-articles.mjs",
+    "heroes": "node scripts/generate-heroes.mjs",
+    "audit": "node scripts/final-audit.mjs"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "express": "^4.21.1",
     "node-cron": "^3.0.3",

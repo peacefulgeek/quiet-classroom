@@ -108,10 +108,17 @@ app.get("/.well-known/health", (req, res) => res.json({ ok: true, name: SITE.nam
 app.use((req, res) => res.status(404).set("Content-Type", "text/html").send(render404({ path: req.path })));
 
 // ---------- IN-CODE CRONS (no Manus scheduled tasks) ----------
+const PUBLISHED_CAP = parseInt(process.env.PUBLISHED_CAP || "100", 10);
 if (process.env.AUTO_GEN_ENABLED === "true") {
-  // Publish 5 per day: every 4.8 hours -> publish next queued
+  // Publish up to N per day, capped at PUBLISHED_CAP total
   cron.schedule("0 30 0,5,10,15,20 * * *", async () => {
     try {
+      const idx = await getIndex();
+      const publishedCount = idx.filter(a => a.status === "published").length;
+      if (publishedCount >= PUBLISHED_CAP) {
+        console.log(`[cron] cap reached (${publishedCount}/${PUBLISHED_CAP}); not publishing`);
+        return;
+      }
       const queued = await getQueued();
       const next = queued[0];
       if (!next) return;
@@ -122,10 +129,10 @@ if (process.env.AUTO_GEN_ENABLED === "true") {
       a.dateModified = Date.now();
       await writeArticleStore(a);
       bustIndex();
-      console.log(`[cron] published ${a.slug}`);
+      console.log(`[cron] published ${a.slug} (${publishedCount + 1}/${PUBLISHED_CAP})`);
     } catch (e) { console.error("[cron] publish error", e); }
   });
-  console.log("[cron] auto-publish enabled (5/day)");
+  console.log(`[cron] auto-publish enabled (5/day, cap ${PUBLISHED_CAP})`);
 } else {
   console.log("[cron] AUTO_GEN_ENABLED=false; auto-publish off");
 }
