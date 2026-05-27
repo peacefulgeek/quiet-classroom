@@ -29,3 +29,17 @@
 
 - [ ] Commit and push to peacefulgeek/quiet-classroom
 - [ ] Verify HEAD matches GitHub
+
+## Hero redesign + design polish (session 2026-05-27)
+
+- [ ] Kill the "bubble" art entirely — no abstract shapes, no generic colored blobs
+- [ ] Generate one **unique photo-real hero** per article (500 total), keyed to the article's actual subject (introvert child reading, parent and child at kitchen table, classroom corner with one quiet kid, etc.)
+- [ ] Encode every hero as **WebP** at ~1600x900 / quality 82
+- [ ] Upload every hero to Bunny at `heroes/{slug}.webp` (no Manus CDN)
+- [ ] Rebuild Bunny `articles/index.json` so every entry has `heroUrl = https://quiet-classroom.b-cdn.net/heroes/{slug}.webp`
+- [ ] Article body JSON also stores the same `heroUrl`
+- [ ] Update card / detail / home templates to display heroes warmly (16:9, soft inner shadow, no bubble fallback)
+- [ ] Remove any remaining bubble/SVG-blob fallback code
+- [ ] Confirm no 100-article cap is left (already done in commit `0ae752a`, re-verify)
+- [ ] Smoke test all routes against Bunny-backed server with the new heroes
+- [ ] Commit + push to `peacefulgeek/quiet-classroom`
