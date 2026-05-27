@@ -17,7 +17,7 @@ export const SITE = {
     url: "https://theoraclelover.com",
     avatar: "https://quiet-classroom.b-cdn.net/brand/oracle-lover-avatar.webp",
   },
-  amazonTag: process.env.AMAZON_TAG || "spankyspinola-20",
+  amazonTag: process.env.AMAZON_TAG || "peacefulgeek-20",
   // Color palette per per-site spec
   palette: {
     bg: "#FAF8F5",
