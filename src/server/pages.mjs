@@ -5,10 +5,43 @@ import { layout, escape } from "./layout.mjs";
 import { mdToHtml } from "../lib/markdown.mjs";
 
 // ---------- HOME ----------
+// Force the live site to skip stale Bunny edge cache after we regenerate heroes;
+// bump this string when we replace any hero so users always see the latest.
+const HERO_CACHE_VERSION = process.env.HERO_CACHE_VERSION || "2026-05-27";
+function heroSrc(url) {
+  if (!url) return SITE.defaultOgImage + "?v=" + HERO_CACHE_VERSION;
+  if (url.includes("?")) return url;
+  return url + "?v=" + HERO_CACHE_VERSION;
+}
+// Strip leading literal *TL;DR:* asterisks from any text used as a card excerpt
+function cleanCardExcerpt(text = "") {
+  let t = String(text || "").trim();
+  // remove leading literal *TL;DR:* / *TL;DR …* markdown italics wrapper
+  t = t.replace(/^\*+\s*TL;DR:?\s*/i, "").replace(/\s*\*+$/, "");
+  // remove any leading bare "TL;DR:"
+  t = t.replace(/^TL;DR:?\s*/i, "");
+  // collapse stray asterisks at start/end
+  t = t.replace(/^[*_]+|[*_]+$/g, "").trim();
+  return t;
+}
+
+function articleCard(a) {
+  const excerpt = cleanCardExcerpt(a.metaDescription || a.tldr || "");
+  return `
+    <a class="article-card" href="/articles/${escape(a.slug)}">
+      <img src="${escape(heroSrc(a.heroUrl))}" alt="" loading="lazy">
+      <div class="article-card__body">
+        <div class="article-card__meta">${escape(a.category || "Article")}</div>
+        <h3>${escape(a.title)}</h3>
+        <p>${escape(excerpt)}</p>
+      </div>
+    </a>`;
+}
+
 export function renderHome({ featured, recent }) {
   const heroArticle = featured;
   const hero = heroArticle
-    ? `<section class="hero" style="background-image:url('${escape(heroArticle.heroUrl || SITE.defaultOgImage)}')">
+    ? `<section class="hero" style="background-image:url('${escape(heroSrc(heroArticle.heroUrl))}')">
          <div class="hero__inner">
            <div class="hero__kicker">${escape(heroArticle.category || "Featured")}</div>
            <h1 class="hero__title"><a href="/articles/${escape(heroArticle.slug)}" style="color:inherit;text-decoration:none">${escape(heroArticle.title)}</a></h1>
@@ -17,31 +50,72 @@ export function renderHome({ featured, recent }) {
        </section>`
     : "";
 
-  const recentCards = recent.map(a => `
-    <a class="article-card" href="/articles/${escape(a.slug)}">
-      <img src="${escape(a.heroUrl || SITE.defaultOgImage)}" alt="" loading="lazy">
-      <div class="article-card__body">
-        <div class="article-card__meta">${escape(a.category || "Article")}</div>
-        <h3>${escape(a.title)}</h3>
-        <p>${escape(a.metaDescription || "")}</p>
-      </div>
+  // Pick six curated jump-offs from recent: prefer one per category to give variety
+  const seenCat = new Set();
+  const jumps = [];
+  for (const a of recent) {
+    const c = (a.category || "").toLowerCase();
+    if (seenCat.has(c)) continue;
+    seenCat.add(c);
+    jumps.push(a);
+    if (jumps.length >= 6) break;
+  }
+  while (jumps.length < 6 && recent.length > jumps.length) jumps.push(recent[jumps.length]);
+
+  const jumpoffsHtml = jumps.map(a => `
+    <a class="jumpoff" href="/articles/${escape(a.slug)}">
+      <div class="jumpoff__kicker">${escape(a.category || "Article")}</div>
+      <div class="jumpoff__title">${escape(a.title)}</div>
+      <p class="jumpoff__excerpt">${escape(cleanCardExcerpt(a.metaDescription || a.tldr || ""))}</p>
     </a>`).join("");
+
+  const recentCards = recent.slice(0, 9).map(articleCard).join("");
 
   const body = `
     <section class="container intro-block">
       <div class="intro-block__kicker">For parents of sensitive children</div>
-      <h2 class="intro-block__title">${escape(SITE.tagline)}</h2>
-      <p class="intro-block__lede">${escape(SITE.pitch)}</p>
-      <p style="margin-top:24px"><a class="category-pill" href="/articles">All articles</a> <a class="category-pill" href="/assessments">9 assessments</a> <a class="category-pill" href="/herbs">Herbs &amp; TCM</a></p>
+      <h2 class="intro-block__title">A quiet kid is not a broken kid.</h2>
+      <p class="intro-block__lede">A Quiet Classroom is a long, slow, honest field guide for the parents of children whose nervous systems were built differently \u2014 the introverts, the highly sensitive, the anxious, the ones who come home and unravel.</p>
     </section>
+
+    <section class="container home-essay">
+      <p class="lede">If you have ended a school day in your car, in the pickup line, mouthing the words \u201Cwhat happened to my child today,\u201D this site is for you. We have been there too. None of this is rare. Some of it is fixable. All of it is survivable.</p>
+
+      <p>Most parenting writing on the internet is built for the loud kid. It assumes your child wants attention and that the path to thriving is more activities, more friends, more confidence drills, more scheduled fun. If you are reading this you probably already know that none of that fits your child. Your child is not broken. Your child is wired toward depth, toward observation, toward solitude as fuel. School is, by design, the opposite. It is loud. It is fast. It is built around extroverts. After six hours of social and sensory load your child is not being defiant when they melt down at the kitchen table. They are honestly tired in a way that the louder kids never have to be.</p>
+
+      <p>This is the resource we wished existed when our own kids first started masking at school. We have done the IEP meetings. We have read the temperament literature, the polyvagal stuff, the sensory-integration research, the Susan Cain canon, the Elaine Aron books, the Stanley Greenspan papers. We have also tried, and sometimes failed, the Monday-morning experiments \u2014 the visual schedules, the noise-cancelling headphones, the after-school decompression protocols, the gentle exit-from-the-classroom plan. Our writing is not theory. It is what we actually did, what worked, what didn\u2019t, and what we wish someone had told us six months earlier. <a class="inline" href="/articles">Browse every article \u2192</a></p>
+
+      <h3>Where to start</h3>
+      <p>If your child is the one hiding in the bathroom before first period, start with <a class="inline" href="/articles?category=introversion-vs-anxiety">Introversion vs. Anxiety</a>. If they came home today and bit a sibling, start with <a class="inline" href="/articles?category=after-school">After-School Recovery</a>. If your gut is saying we need a 504 or an IEP, start with <a class="inline" href="/articles?category=iep-and-504">IEPs and 504 Plans</a>. If your child is melting down at the kitchen table over a worksheet that should take twelve minutes, start with <a class="inline" href="/articles?category=homework-and-learning">Homework and Learning</a>.</p>
+
+      <p>If you are not sure where to begin, we built a small set of <a class="inline" href="/assessments">private self-assessments</a> that run in your browser. Nothing is uploaded. Nothing is stored. They are not diagnostic. They are starting points for the conversation you are about to have with your pediatrician, your child\u2019s teacher, or yourself at midnight when you cannot sleep.</p>
+
+      <h3>What we believe</h3>
+      <p>We believe in low-arousal parenting and high-belief parenting at the same time. We believe in working <em>with</em> the nervous system rather than against it. We believe sleep is medicine, that magnesium and L-theanine are not silly, that screens after 7pm steal the next morning, that one safe adult at school changes the entire arc, and that you do not have to be a perfectly regulated parent to raise a regulated child \u2014 you only have to repair faster than you rupture. We believe school refusal is communication and that the appropriate response is curiosity, not consequences. We believe asking for accommodations is not coddling. We believe most of what is called bad behavior in a sensitive child is actually unmet need.</p>
+
+      <h3>Plain talk, not catastrophizing</h3>
+      <p>You will not find toxic positivity here. You will not find catastrophe either. We are allergic to both. The articles are written to be read at 10pm with cold tea, and to give you one specific thing you can try Monday morning. We use plain language, real research, and the tools we have actually used in our own homes and with families we work with. We try to make every piece long enough to be useful and short enough to fit between bedtime and your own collapse.</p>
+
+      <p>If you find a piece that helps, share it with the parent in your life who needs it. If you find one that misses, write to us \u2014 the goal is not to be right, the goal is to be useful. <a class="inline" href="/about">More about who we are \u2192</a></p>
+    </section>
+
     <section class="container-wide">
-      <h2 style="border:0;padding:24px 0 0;">Recent writing</h2>
+      <hr class="section-rule" />
+      <h2 style="border:0;padding:0 24px;">Start somewhere</h2>
+      <div class="jumpoffs" style="padding-left:24px;padding-right:24px;">${jumpoffsHtml}</div>
+    </section>
+
+    <section class="container-wide">
+      <hr class="section-rule" />
+      <h2 style="border:0;padding:0 24px;">Recent writing</h2>
       <div class="article-grid">${recentCards}</div>
     </section>
+
     <section class="cta-strip"><div class="container">
-      <h3>Tired of advice that doesn't fit your kid?</h3>
-      <p>Start with the assessments. They take five minutes and they will help you find your bearings.</p>
+      <h3>Tired of advice that doesn\u2019t fit your kid?</h3>
+      <p>The assessments take five minutes. The articles are honest. The herbs and supplements pages are sourced. Start anywhere.</p>
       <a class="btn" href="/assessments">Try the assessments</a>
+      <a class="btn" href="/articles" style="margin-left:10px;background:#5b6fa5">Browse all articles</a>
     </div></section>`;
   return layout({
     title: SITE.name,
@@ -64,15 +138,7 @@ export function renderHome({ featured, recent }) {
 // ---------- ARTICLES INDEX ----------
 export function renderArticlesIndex({ articles, category }) {
   const filtered = category ? articles.filter(a => slugify(a.category) === category) : articles;
-  const cards = filtered.map(a => `
-    <a class="article-card" href="/articles/${escape(a.slug)}">
-      <img src="${escape(a.heroUrl || SITE.defaultOgImage)}" alt="" loading="lazy">
-      <div class="article-card__body">
-        <div class="article-card__meta">${escape(a.category || "Article")}</div>
-        <h3>${escape(a.title)}</h3>
-        <p>${escape(a.metaDescription || "")}</p>
-      </div>
-    </a>`).join("");
+  const cards = filtered.map(articleCard).join("");
   const pills = PILLARS.map(p => `<a class="category-pill" href="/articles?category=${escape(p.slug)}">${escape(p.title)}</a>`).join(" ");
   const body = `
     <section class="container intro-block">
@@ -89,18 +155,52 @@ export function renderArticlesIndex({ articles, category }) {
   });
 }
 
+// Clean an article markdown body for rendering: drop the leading H1 (we render the title in the hero),
+// drop the leading literal *TL;DR: ...* paragraph (we render `tldr` separately above),
+// and drop trailing tonal closers like `*Tat Tvam Asi.*` / `*Sat Chit Ananda.*` that don't fit a parenting site.
+function cleanArticleBody(md = "") {
+  let s = String(md || "").replace(/\r\n/g, "\n").trim();
+  // 1. drop leading H1
+  s = s.replace(/^#\s.+\n+/, "");
+  // 2. drop leading italics TL;DR paragraph (one paragraph)
+  s = s.replace(/^\*+\s*TL;DR:?[\s\S]*?\*+\s*\n+/i, "");
+  // 3. drop trailing Sanskrit / mantra closers (any italic single-line closers at end)
+  const tonalClosers = [
+    /\*+\s*Tat\s+Tvam\s+Asi\.?\s*\*+\s*$/i,
+    /\*+\s*Sat\s+Chit\s+Ananda\.?\s*\*+\s*$/i,
+    /\*+\s*Aham\s+Brahmasmi\.?\s*\*+\s*$/i,
+    /\*+\s*So\s+Hum\.?\s*\*+\s*$/i,
+  ];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const rx of tonalClosers) {
+      const before = s;
+      s = s.replace(rx, "").trimEnd();
+      if (s !== before) changed = true;
+    }
+  }
+  return s.trim();
+}
+
 // ---------- ARTICLE ----------
 export function renderArticle(article) {
-  const html = mdToHtml(article.body || "");
-  const hero = `<section class="hero" style="background-image:url('${escape(article.heroUrl || SITE.defaultOgImage)}')">
+  const html = mdToHtml(cleanArticleBody(article.body || ""));
+  const hero = `<section class="hero" style="background-image:url('${escape(heroSrc(article.heroUrl))}')">
     <div class="hero__inner">
       <div class="hero__kicker">${escape(article.category || "Article")}</div>
       <h1 class="hero__title">${escape(article.title)}</h1>
       <div class="hero__meta">${article.readingTime || 8} min read &middot; by ${escape(SITE.author.name)}${article.publishedAt ? " &middot; " + new Date(article.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""}</div>
     </div>
   </section>`;
-  const tldrHtml = article.tldr ? `<div class="article__tldr">${escape(article.tldr)}</div>` : "";
+  const cleanTldr = (article.tldr || "").replace(/^\*+\s*TL;DR:?\s*/i, "").replace(/\s*\*+$/, "").replace(/^TL;DR:?\s*/i, "").trim();
+  const tldrHtml = cleanTldr ? `<div class="article__tldr"><strong>TL;DR \u00b7</strong> ${escape(cleanTldr)}</div>` : "";
   const tagsHtml = (article.tags || []).map(t => `<span class="tag-pill">${escape(t)}</span>`).join("");
+  const dateLong = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+  const bylineHtml = `<div class="article__byline" style="display:flex;align-items:center;gap:12px;margin:0 0 28px;">
+    <img src="${escape(SITE.author.avatar)}" alt="${escape(SITE.author.name)}" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" loading="lazy">
+    <span>By <a href="${escape(SITE.author.url)}" rel="me">${escape(SITE.author.name)}</a>${dateLong ? " \u00b7 " + escape(dateLong) : ""}${article.readingTime ? " \u00b7 " + article.readingTime + " min read" : ""}</span>
+  </div>`;
   const bioCard = `<div class="bio-card">
     <img src="${escape(SITE.author.avatar)}" alt="${escape(SITE.author.name)}">
     <div>
@@ -112,8 +212,8 @@ export function renderArticle(article) {
   const body = `
     <article class="article">
       <div class="container">
+        ${bylineHtml}
         ${tldrHtml}
-        <div class="article__byline">By <a href="${escape(SITE.author.url)}">${escape(SITE.author.name)}</a></div>
         ${html}
         ${bioCard}
         <div style="margin-top:24px">${tagsHtml}</div>

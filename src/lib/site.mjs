@@ -35,7 +35,7 @@ export const SITE = {
     uiMedium: "https://quiet-classroom.b-cdn.net/fonts/DMSans-Medium.woff2",
   },
   // Default OG fallback (per-article will override)
-  defaultOgImage: "https://quiet-classroom.b-cdn.net/og/default-1200x630.webp",
+  defaultOgImage: "https://quiet-classroom.b-cdn.net/brand/og-default-1200x630.webp",
   publishCadencePerDay: 5,
   disclaimer:
     "DISCLAIMER: Content on aquietclassroom.com is for educational purposes only and does not constitute medical, psychological, or educational advice. Always consult qualified professionals for your child's specific needs.",

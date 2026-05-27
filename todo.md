@@ -43,3 +43,20 @@
 - [ ] Confirm no 100-article cap is left (already done in commit `0ae752a`, re-verify)
 - [ ] Smoke test all routes against Bunny-backed server with the new heroes
 - [ ] Commit + push to `peacefulgeek/quiet-classroom`
+
+
+## 2026-05-27 PM — full live-site rescue pass
+
+- [ ] Diagnose what aquietclassroom.com is actually serving (commit, hero source, TL;DR markup, byline)
+- [ ] Rewrite home page as ~800-word warm essay with curated jump-offs to articles / herbs / assessments
+- [ ] Fix `/articles` grid: clean cards, no leading literal `*TL;DR:` text, no underlined card titles, real Bunny photo heroes
+- [ ] Strip orphan `*TL;DR:` markdown asterisks across all 500 article JSON files
+- [ ] Fix bylines: replace any "Oracle Lover"/cross-site garbage with a clean A Quiet Classroom byline (no broken avatars)
+- [ ] Audit prose: no weird chars, no broken paragraphs, no truncated sentences, no nested bullet rot
+- [ ] Bring article bodies to 1800-2500 words (regenerate where shorter), keep tone warm and encouraging
+- [ ] Audit hero uniqueness via perceptual hash; regenerate any duplicates
+- [ ] Build / repair Herbs & Supplements page: 100-200 entries with triple-verified Amazon ASINs, tag=spankyspinola-20
+- [ ] Confirm content store is JSON-on-Bunny only; no DB, no Manus dependency in production
+- [ ] Confirm cron fires with no cap; 30-100 published, 400+ gated; top up if not enough
+- [ ] Push to peacefulgeek/quiet-classroom and prompt user to redeploy on Railway
+- [ ] 10x end-to-end live-domain verification with curls + screenshots + final report
