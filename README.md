@@ -14,7 +14,7 @@ Public site: https://aquietclassroom.com
 | Writing | DeepSeek V4 Flash via OpenAI-compatible API |
 | Compression | sharp for WebP rasterization |
 | Cron | node-cron, runs in-process inside Express |
-| Hosting target | Any Node 22 host. DigitalOcean App Platform spec lives in `.do/app.yaml`. |
+| Hosting target | Any Node 22 host. Railway-ready: see `railway.json` and `DEPLOY-RAILWAY.md`. |
 
 There are no Manus dependencies anywhere in this codebase.
 
@@ -25,14 +25,14 @@ pnpm install
 node src/server/index.mjs
 ```
 
-Open http://localhost:3000.
+Open http://localhost:8080.
 
 ## Content
 
 | Surface | Source |
 |---|---|
 | Articles | `content/articles/*.json` (one file per article, with `body` in Markdown) |
-| Herbs / TCM / supplements | `src/data/herbs.json` (210 entries) |
+| Herbs / TCM / supplements | `src/data/herbs-catalog.json` (210 entries) |
 | Assessments | `src/data/assessments.json` (9) |
 | ASIN catalog | `src/data/asin-catalog.json` |
 | Topic queue | `src/data/topics-500.json` |
@@ -59,7 +59,8 @@ src/lib/                  bunny, deepseek, store, quality-gate, markdown, site
 src/server/               express server, page renderers, feeds (sitemap, rss, llms, ai)
 client/public/            static favicon and CSS
 scripts/                  generators, hero pipeline, post-process, audit
-.do/app.yaml              DigitalOcean App Platform spec
+railway.json              Railway builder + start command
+DEPLOY-RAILWAY.md         Step-by-step Railway deploy notes
 ```
 
 ## Voice rules (hard)

@@ -1,5 +1,16 @@
 // Express SSR for A Quiet Classroom. Pure Node, zero Manus dependencies.
 
+// ---------- CRASH DIAGNOSTICS (must be first lines) ----------
+process.on("uncaughtException", (err) => {
+  console.error("[fatal] uncaughtException:", err && err.stack ? err.stack : err);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[fatal] unhandledRejection:", reason);
+  process.exit(1);
+});
+console.log("[boot] node", process.version, "pid", process.pid, "port-env", process.env.PORT || "(unset)");
+
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -141,6 +152,19 @@ if (process.env.AUTO_GEN_ENABLED === "true") {
 cron.schedule("0 0 * * * *", async () => { try { await buildSitemap(); } catch {} });
 
 const PORT = parseInt(process.env.PORT || "8080", 10);
-app.listen(PORT, () => {
-  console.log(`${SITE.name} listening on http://localhost:${PORT}`);
+const HOST = "0.0.0.0"; // Railway requires bind to 0.0.0.0, not localhost
+const server = app.listen(PORT, HOST, () => {
+  console.log(`${SITE.name} listening on http://${HOST}:${PORT}`);
 });
+server.on("error", (err) => {
+  console.error("[fatal] http server error:", err);
+  process.exit(1);
+});
+// Graceful shutdown so Railway can roll deploys cleanly
+for (const sig of ["SIGTERM", "SIGINT"]) {
+  process.on(sig, () => {
+    console.log(`[shutdown] ${sig} received; closing http server`);
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 5000).unref();
+  });
+}
