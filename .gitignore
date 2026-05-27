@@ -11,3 +11,5 @@ content/heroes-tmp/
 # Article JSON now lives on Bunny CDN (articles/{slug}.json + articles/index.json).
 # Kept locally only for one-shot migration / dev mirror. Never commit.
 content/articles/
+content/heroes-png/
+content/brand/
