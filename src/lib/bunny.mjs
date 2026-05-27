@@ -76,6 +76,30 @@ export async function fetchJsonFromBunny(remotePath, opts) {
 }
 
 /**
+ * Fetch JSON directly from Bunny ORIGIN storage (bypasses pull-zone cache).
+ * Use for the master index so the server always sees the latest writes.
+ * Returns null on 404, throws on other non-2xx.
+ */
+export async function fetchJsonFromBunnyOrigin(remotePath, { timeoutMs = 10000 } = {}) {
+  const cleanPath = remotePath.replace(/^\/+/, "");
+  const url = `https://${BUNNY.storageHost}/${BUNNY.storageZone}/${cleanPath}`;
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { AccessKey: BUNNY.storageKey },
+      signal: ctrl.signal,
+      cache: "no-store",
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Bunny origin ${res.status} for ${remotePath}`);
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/**
  * Delete an object from Bunny storage. Returns true if deleted or already gone.
  */
 export async function deleteFromBunny(remotePath) {

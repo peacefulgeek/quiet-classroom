@@ -12,6 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   fetchJsonFromBunny,
+  fetchJsonFromBunnyOrigin,
   uploadJsonToBunny,
   deleteFromBunny,
   bunnyUrl,
@@ -68,10 +69,17 @@ export async function readArticle(slug) {
   if (cached !== undefined) return cached;
 
   if (STORE_MODE === "bunny") {
-    const article = await fetchJsonFromBunny(`${REMOTE_PREFIX}/${slug}.json`).catch((e) => {
-      console.error(`[store] bunny read failed for ${slug}:`, e.message);
+    // Read article from origin storage first to bypass pull-zone CDN cache.
+    let article = await fetchJsonFromBunnyOrigin(`${REMOTE_PREFIX}/${slug}.json`).catch((e) => {
+      console.error(`[store] bunny origin read failed for ${slug}, falling back:`, e.message);
       return null;
     });
+    if (!article) {
+      article = await fetchJsonFromBunny(`${REMOTE_PREFIX}/${slug}.json`).catch((e) => {
+        console.error(`[store] bunny read failed for ${slug}:`, e.message);
+        return null;
+      });
+    }
     if (article) lruSet(slug, article);
     return article;
   }
@@ -95,10 +103,17 @@ export async function getIndex({ force = false } = {}) {
   let items = null;
 
   if (STORE_MODE === "bunny") {
-    items = await fetchJsonFromBunny(INDEX_REMOTE_PATH).catch((e) => {
-      console.error("[store] bunny index read failed:", e.message);
+    // Read index from origin storage to bypass pull-zone CDN cache.
+    items = await fetchJsonFromBunnyOrigin(INDEX_REMOTE_PATH).catch((e) => {
+      console.error("[store] bunny origin index read failed, falling back to pull zone:", e.message);
       return null;
     });
+    if (!items) {
+      items = await fetchJsonFromBunny(INDEX_REMOTE_PATH).catch((e) => {
+        console.error("[store] bunny pull-zone index read failed:", e.message);
+        return null;
+      });
+    }
   }
 
   if (!items) {
