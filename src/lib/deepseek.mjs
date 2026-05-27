@@ -11,8 +11,8 @@ const client = new OpenAI({
   timeout: 180_000, // 3 min per call
   maxRetries: 1,
 });
-// Use flash by default: 5x faster than pro for the same article quality at this length
-const MODEL = process.env.GEN_MODEL || "deepseek-v4-flash";
+// Default model name comes from OPENAI_MODEL (canonical, matches Railway env spec). GEN_MODEL kept for back-compat.
+const MODEL = process.env.OPENAI_MODEL || process.env.GEN_MODEL || "deepseek-v4-pro";
 
 const SYSTEM = `You are The Oracle Lover, a researcher-parent who writes for parents of introverted, anxious, and highly sensitive school-age children.
 

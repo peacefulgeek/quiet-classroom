@@ -1,16 +1,13 @@
 #!/usr/bin/env node
-// Post-process every published article body:
+// Post-process every published+draft article body:
 // 1. Replace every em-dash with a comma + space (the hard rule).
 // 2. Replace banned-word leftovers with neutral substitutes.
 // 3. Resolve [INTERNAL: keyword] placeholders by linking to the closest related slug.
 // 4. Re-run the quality gate and update qualityWarnings.
+// 5. Persist through the store layer (Bunny in prod, local in dev).
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { checkArticle } from "../src/lib/quality-gate.mjs";
-
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-const DIR = path.join(ROOT, "content/articles");
+import { getIndex, readArticle, writeArticle, rebuildIndex, bustIndex } from "../src/lib/store.mjs";
 
 // Word-level substitutions for banned vocabulary. Conservative: prefer plain English.
 const SUBS = {
@@ -80,14 +77,11 @@ const PHRASE_SUBS = {
 
 function applySubs(text) {
   let out = text;
-  // em-dash, en-dash, double-hyphen
   out = out.replace(/—/g, ", ").replace(/–/g, ", ").replace(/--/g, ", ");
-  // phrases first
   for (const [k, v] of Object.entries(PHRASE_SUBS)) {
     out = out.split(k).join(v);
     out = out.split(k.toLowerCase()).join(v);
   }
-  // single words, case-preserving for first-letter
   for (const [k, v] of Object.entries(SUBS)) {
     const re = new RegExp(`\\b${k.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`, "gi");
     out = out.replace(re, (m) => {
@@ -95,21 +89,8 @@ function applySubs(text) {
       return v;
     });
   }
-  // collapse double spaces and clean up the comma-space artifacts
   out = out.replace(/ +,/g, ",").replace(/ {2,}/g, " ").replace(/ +\./g, ".");
   return out;
-}
-
-// Build an index of slug + tags so internal-link placeholders can be resolved
-async function loadIndex() {
-  const files = (await fs.readdir(DIR)).filter(f => f.endsWith(".json"));
-  const index = [];
-  for (const f of files) {
-    const a = JSON.parse(await fs.readFile(path.join(DIR, f), "utf8"));
-    if (a.status !== "published") continue;
-    index.push({ slug: a.slug, title: a.title, tags: (a.tags || []).map(t => t.toLowerCase()), titleWords: (a.title || "").toLowerCase().split(/\W+/) });
-  }
-  return index;
 }
 
 function resolvePlaceholder(keyword, index, currentSlug) {
@@ -118,10 +99,13 @@ function resolvePlaceholder(keyword, index, currentSlug) {
   let best = null, bestScore = 0;
   for (const item of index) {
     if (item.slug === currentSlug) continue;
+    if (item.status !== "published") continue;
     let score = 0;
+    const itemTags = (item.tags || []).map((t) => t.toLowerCase());
+    const titleWords = (item.title || "").toLowerCase().split(/\W+/);
     for (const w of kWords) {
-      if (item.tags.includes(w)) score += 2;
-      if (item.titleWords.includes(w)) score += 1;
+      if (itemTags.includes(w)) score += 2;
+      if (titleWords.includes(w)) score += 1;
     }
     if (score > bestScore) { bestScore = score; best = item; }
   }
@@ -129,34 +113,28 @@ function resolvePlaceholder(keyword, index, currentSlug) {
   return keyword;
 }
 
-const index = await loadIndex();
-console.log(`indexed ${index.length} published articles`);
+const index = await getIndex({ force: true });
+console.log(`indexed ${index.length} entries  published=${index.filter(a => a.status === "published").length}  drafts=${index.filter(a => a.status === "draft").length}`);
 
-const files = (await fs.readdir(DIR)).filter(f => f.endsWith(".json"));
-let processed = 0, gateOk = 0, gateWarn = 0;
+let processed = 0, gateOk = 0, gateWarn = 0, untouched = 0;
+const refreshed = [];
 
-for (const f of files) {
-  const fp = path.join(DIR, f);
-  const a = JSON.parse(await fs.readFile(fp, "utf8"));
-  if ((a.status !== "published" && a.status !== "draft") || !a.body) continue;
+for (const entry of index) {
+  if (entry.status !== "published" && entry.status !== "draft") { untouched++; continue; }
+  const a = await readArticle(entry.slug);
+  if (!a || !a.body) { untouched++; continue; }
 
   let body = a.body;
   body = applySubs(body);
-
-  // Resolve internal-link placeholders
   body = body.replace(/\[INTERNAL:\s*([^\]]+)\]/gi, (_m, kw) => resolvePlaceholder(kw, index, a.slug));
 
-  // Ensure the required closing signature is present
   if (!/Sat Chit Ananda/i.test(body)) {
     body = body.replace(/\s+$/, "") + "\n\n*Sat Chit Ananda.*\n";
   }
-
   a.body = body;
 
-  // Clean tldr and metaDescription too
   if (a.tldr) a.tldr = applySubs(a.tldr);
   if (a.metaDescription) a.metaDescription = applySubs(a.metaDescription);
-  // Recompute tldr/metaDescription if missing or unhelpful
   const firstSent = (body.match(/^[^#].{60,200}\./m) || [""])[0].trim();
   if (!a.tldr) {
     const tldrMatch = body.match(/^_(.+?)_$/m) || body.match(/^\*([^*\n]{30,260})\*$/m);
@@ -171,8 +149,20 @@ for (const f of files) {
   a.qualityWarnings = gate.ok ? undefined : gate.reasons;
   if (gate.ok) gateOk++; else gateWarn++;
 
-  await fs.writeFile(fp, JSON.stringify(a, null, 2));
+  await writeArticle(a);
+  refreshed.push(a);
   processed++;
+  if (processed % 25 === 0) console.log(`  processed ${processed} so far`);
 }
 
-console.log(`post-processed: ${processed}  gate-clean=${gateOk}  warnings=${gateWarn}`);
+// Rebuild master index after all writes
+bustIndex();
+const fullIndex = await getIndex({ force: true });
+// If we have full article objects available, rebuild from those for completeness;
+// otherwise use the index entries we already have
+await rebuildIndex(refreshed.length ? refreshed.concat(
+  // include items we didn't touch but still want indexed: just re-use their entry
+  fullIndex.filter((e) => !refreshed.find((r) => r.slug === e.slug))
+) : fullIndex);
+
+console.log(`post-processed: ${processed}  gate-clean=${gateOk}  warnings=${gateWarn}  untouched=${untouched}`);

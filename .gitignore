@@ -7,3 +7,7 @@ content/heroes-tmp/
 *.zip
 *.tar.gz
 .cache/
+
+# Article JSON now lives on Bunny CDN (articles/{slug}.json + articles/index.json).
+# Kept locally only for one-shot migration / dev mirror. Never commit.
+content/articles/

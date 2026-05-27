@@ -8,15 +8,11 @@
 //   FORCE=1 node scripts/generate-heroes.mjs         # rebuild every hero
 //   ONLY=slug-a,slug-b node scripts/generate-heroes.mjs
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 
 import { uploadRawToBunny } from "../src/lib/bunny.mjs";
-
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-const ARTICLES_DIR = path.join(ROOT, "content/articles");
+import { getIndex, readArticle, writeArticle, rebuildIndex, bustIndex } from "../src/lib/store.mjs";
 
 // Periwinkle, soft blue, mauve, dusty teal, cream, sage. Calm palette.
 const PALETTES = [
@@ -67,18 +63,18 @@ function escape(s) {
 const FORCE = process.env.FORCE === "1";
 const ONLY = (process.env.ONLY || "").split(",").map(s => s.trim()).filter(Boolean);
 
-const files = (await fs.readdir(ARTICLES_DIR)).filter(f => f.endsWith(".json"));
+const index = await getIndex({ force: true });
 let ok = 0, skipped = 0, fail = 0;
 
-for (const f of files) {
-  const fp = path.join(ARTICLES_DIR, f);
-  const a = JSON.parse(await fs.readFile(fp, "utf8"));
-  if (ONLY.length && !ONLY.includes(a.slug)) continue;
-  if (a.status !== "published" && a.status !== "draft" && !FORCE) continue;
-  if (a.heroUrl && a.heroUrl.includes("quiet-classroom.b-cdn.net") && !FORCE) {
+for (const entry of index) {
+  if (ONLY.length && !ONLY.includes(entry.slug)) continue;
+  if (entry.status !== "published" && entry.status !== "draft" && !FORCE) continue;
+  if (entry.heroUrl && entry.heroUrl.includes("quiet-classroom.b-cdn.net") && !FORCE) {
     skipped++;
     continue;
   }
+  const a = await readArticle(entry.slug);
+  if (!a) { fail++; continue; }
   try {
     const svg = svgFor(a.slug, a.title, a.category);
     const webp = await sharp(Buffer.from(svg)).resize(1600, 900).webp({ quality: 82 }).toBuffer();
@@ -86,13 +82,19 @@ for (const f of files) {
     a.heroUrl = url;
     a.heroAlt = `${a.title}. Calm gradient hero for A Quiet Classroom.`;
     a.dateModified = Date.now();
-    await fs.writeFile(fp, JSON.stringify(a, null, 2));
+    await writeArticle(a);
     ok++;
-    console.log(`ok ${a.slug} -> ${url}`);
+    if (ok % 25 === 0) console.log(`  uploaded ${ok} so far`);
   } catch (e) {
     fail++;
     console.error(`fail ${a.slug}: ${e.message}`);
   }
 }
 
+// Rebuild master index so new heroUrls show up in /articles, sitemaps, RSS
+bustIndex();
+const fresh = await getIndex({ force: true });
+await rebuildIndex(
+  await Promise.all(fresh.map(async (e) => (await readArticle(e.slug)) || e))
+);
 console.log(`\nheroes: ok=${ok} skipped=${skipped} fail=${fail}`);

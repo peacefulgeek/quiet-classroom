@@ -45,3 +45,56 @@ export async function uploadRawToBunny(remotePath, buffer, contentType) {
 export function bunnyUrl(remotePath) {
   return `${BUNNY.pullZone}/${remotePath.replace(/^\/+/, "")}`;
 }
+
+/**
+ * Fetch raw bytes for a given path on the public Bunny pull zone.
+ * Returns null on 404, throws on other non-2xx.
+ */
+export async function fetchFromBunny(remotePath, { timeoutMs = 10000 } = {}) {
+  const url = bunnyUrl(remotePath);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Bunny pull ${res.status} for ${remotePath}`);
+    return await res.arrayBuffer();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/**
+ * Fetch and parse JSON from the public Bunny pull zone.
+ * Returns null on 404.
+ */
+export async function fetchJsonFromBunny(remotePath, opts) {
+  const buf = await fetchFromBunny(remotePath, opts);
+  if (!buf) return null;
+  const text = Buffer.from(buf).toString("utf8");
+  return JSON.parse(text);
+}
+
+/**
+ * Delete an object from Bunny storage. Returns true if deleted or already gone.
+ */
+export async function deleteFromBunny(remotePath) {
+  const cleanPath = remotePath.replace(/^\/+/, "");
+  const url = `https://${BUNNY.storageHost}/${BUNNY.storageZone}/${cleanPath}`;
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: { AccessKey: BUNNY.storageKey },
+  });
+  if (res.status === 404 || res.ok) return true;
+  const text = await res.text().catch(() => "");
+  throw new Error(`Bunny delete failed ${res.status} for ${cleanPath}: ${text.slice(0, 200)}`);
+}
+
+/**
+ * Upload a JSON object to Bunny storage as application/json.
+ * Returns the public pull URL.
+ */
+export async function uploadJsonToBunny(remotePath, obj) {
+  const body = Buffer.from(JSON.stringify(obj, null, 2), "utf8");
+  return uploadRawToBunny(remotePath, body, "application/json; charset=utf-8");
+}

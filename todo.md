@@ -1,0 +1,31 @@
+# A Quiet Classroom — TODO
+
+## Bunny-as-source-of-truth migration (Option B)
+
+- [ ] Refactor `src/lib/store.mjs` so `getIndex`, `readArticle`, `getPublished`, `getQueued`, `writeArticle` read/write to Bunny instead of local `content/articles/`
+- [ ] Add an in-memory cache for `articles-index.json` (TTL 60s) so the homepage and `/articles` don't refetch on every hit
+- [ ] Add a small per-slug LRU cache (size 200) for full article bodies
+- [ ] Keep a local-file fallback path so `pnpm dev` still works without Bunny credentials
+- [ ] Write `scripts/upload-articles-to-bunny.mjs` that uploads all 500 `content/articles/*.json` plus a built `articles-index.json` to `https://quiet-classroom.b-cdn.net/articles/`
+- [ ] After upload, verify a sample article and the index are both fetchable over public Bunny pull URL
+- [ ] Add `content/articles/` to `.gitignore` and `git rm -r --cached content/articles/` so git stops tracking them
+- [ ] Update `scripts/run-pending-batch.mjs` and `scripts/post-process-articles.mjs` and `scripts/generate-heroes.mjs` to read/write through the new store
+
+## Env-var schema sync to Railway spec
+
+- [ ] Rename `AMAZON_AFFIL_TAG` -> `AMAZON_TAG` everywhere in source
+- [ ] Default `OPENAI_MODEL` to `deepseek-v4-pro` (was `deepseek-v4-flash`)
+- [ ] Wire `FAL_KEY` env var into hero generator (real photo heroes via FAL)
+- [ ] Document `JWT_SECRET` (reserved for future auth) and `GH_PAT` (used by deploy scripts only)
+- [ ] Update `DEPLOY-RAILWAY.md` env-var table to match exactly
+
+## Verify
+
+- [ ] Smoke-test all 11 routes locally with Bunny-backed store
+- [ ] Em-dash sweep across 100 published article pages
+- [ ] Confirm zero references to `AMAZON_AFFIL_TAG`, `deepseek-v4-flash`, or local `content/articles/` paths in source
+
+## Deliver
+
+- [ ] Commit and push to peacefulgeek/quiet-classroom
+- [ ] Verify HEAD matches GitHub
