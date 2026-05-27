@@ -10,8 +10,8 @@ The site is now fully migrated to the **"JSON files on Bunny CDN as source of tr
 |---|---|
 | Articles on Bunny CDN | **500** (`articles/{slug}.json`) |
 | Master index on Bunny | **500 entries** at `articles/index.json` |
-| Published | **100** (hard cap enforced) |
-| Gated drafts | **300** |
+| Published | **100** at this snapshot (no cap; cron drains the queue) |
+| Drafts | **300** |
 | Queued (topic-only) | **100** |
 | Heroes on Bunny | **400** WebP at `heroes/{slug}.webp` |
 | Avg words per published | **1,581** |
@@ -82,7 +82,6 @@ The article page rendered the full body fetched live from Bunny (18,341 bytes fo
 | `NODE_ENV` | `production` |
 | `STORE_MODE` | `bunny` |
 | `AUTO_GEN_ENABLED` | `true` |
-| `PUBLISHED_CAP` | `100` |
 | `AMAZON_TAG` | `spankyspinola-20` |
 | `OPENAI_API_KEY` | `sk-82bdad0a1fd34987b73030504ae67080` |
 | `OPENAI_BASE_URL` | `https://api.deepseek.com` |

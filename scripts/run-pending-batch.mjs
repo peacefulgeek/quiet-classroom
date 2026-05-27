@@ -10,7 +10,7 @@ import { writeArticle as authorArticle } from "../src/lib/deepseek.mjs";
 
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || process.env.PUBLISH_FIRST || "10", 10);
 const PUBLISH = (process.env.PUBLISH || "true") !== "false";
-const PUBLISHED_CAP = parseInt(process.env.PUBLISHED_CAP || "100", 10);
+// No hard cap per scope. Batch is purely BATCH_SIZE.
 
 const index = await getIndex({ force: true });
 let currentlyPublished = index.filter((a) => a.status === "published").length;
@@ -24,18 +24,8 @@ for (const e of queueEntries) {
   if (!a.body || a.body.length < 200) queue.push(a);
 }
 
-// If publishing, cap the slice so we never exceed PUBLISHED_CAP
-let effectiveBatch = BATCH_SIZE;
-if (PUBLISH) {
-  const room = Math.max(0, PUBLISHED_CAP - currentlyPublished);
-  effectiveBatch = Math.min(BATCH_SIZE, room);
-  if (effectiveBatch === 0) {
-    console.log(`cap reached: published=${currentlyPublished} cap=${PUBLISHED_CAP}; nothing to do`);
-    process.exit(0);
-  }
-}
-const work = queue.slice(0, effectiveBatch);
-console.log(`published=${currentlyPublished}/${PUBLISHED_CAP} queued total=${queue.length} processing=${work.length} publish=${PUBLISH}`);
+const work = queue.slice(0, BATCH_SIZE);
+console.log(`published=${currentlyPublished} queued total=${queue.length} processing=${work.length} publish=${PUBLISH}`);
 
 const CONCURRENCY = parseInt(process.env.CONCURRENCY || "5", 10);
 let ok = 0, fail = 0, idx = 0;

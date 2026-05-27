@@ -39,8 +39,7 @@ There is intentionally **no** `Dockerfile`, **no** `nixpacks.toml`, and **no** `
 | `OPENAI_API_KEY` | DeepSeek API key | (your key) |
 | `OPENAI_MODEL` | Model name | `deepseek-v4-flash` |
 | `AMAZON_AFFIL_TAG` | Amazon affiliate tag | `spankyspinola-20` |
-| `PUBLISHED_CAP` | Hard cap on published articles | `100` |
-| `AUTO_GEN_ENABLED` | `true` to enable in-process publish cron, `false` to freeze | `false` |
+| `AUTO_GEN_ENABLED` | `true` to enable in-process publish cron, `false` to freeze | `true` |
 | `NODE_ENV` | Production hint | `production` |
 
 3. **Do NOT set `PORT`.** Railway injects it. The server reads `process.env.PORT` and falls back to `8080` only for local dev. Hard-coding `PORT` in Railway env will break the deploy.
@@ -82,9 +81,9 @@ All should return `200`.
 2. Express imports load. If any throw, `uncaughtException` fires and the process exits 1, which Railway logs.
 3. Static data is loaded from `src/data/*.json` (herbs, assessments, ASIN catalog).
 4. App binds to `0.0.0.0:<PORT>`. Railway routes traffic.
-5. If `AUTO_GEN_ENABLED=true`, an in-process node-cron publishes one queued article every 5 hours, capped at `PUBLISHED_CAP`.
+5. If `AUTO_GEN_ENABLED=true`, an in-process node-cron promotes one queued article to published every 5 hours. There is no cap; the cron drains the queue.
 6. Sitemap warm-up runs hourly.
 
-## Manual cap override
+## Auto-publish control
 
-To lift the cap (for a content push), set `PUBLISHED_CAP=200` in Railway env vars and redeploy. To freeze auto-publish, set `AUTO_GEN_ENABLED=false`.
+There is no cap on published articles. To temporarily freeze the auto-publish cron (e.g., during a content review), set `AUTO_GEN_ENABLED=false` in Railway env vars and redeploy.
