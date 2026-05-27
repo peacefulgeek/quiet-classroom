@@ -60,3 +60,16 @@
 - [ ] Confirm cron fires with no cap; 30-100 published, 400+ gated; top up if not enough
 - [ ] Push to peacefulgeek/quiet-classroom and prompt user to redeploy on Railway
 - [ ] 10x end-to-end live-domain verification with curls + screenshots + final report
+
+
+## 2026-05-27 PM2 — make-it-perfect pass (long-running)
+
+- [ ] Expand all 475 short articles to 1800-2500 words via forge LLM (warm, well-formatted, byline-ready)
+- [ ] Fix the ~50 articles that have effectively empty bodies
+- [ ] Re-upload expanded JSON to Bunny + rebuild master index
+- [ ] Hero uniqueness audit (perceptual hash); regen duplicates
+- [ ] Herbs & Supplements page: 100-200 entries with triple-verified Amazon ASINs (tag=spankyspinola-20)
+- [ ] Confirm JSON-on-Bunny only; no DB, no Manus dependencies
+- [ ] Confirm crons fire with no cap; 30-100 published, 400+ gated
+- [ ] Push final state to peacefulgeek/quiet-classroom
+- [ ] 10x end-to-end live-domain verification + final report
