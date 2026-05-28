@@ -3,6 +3,53 @@
 import { SITE, PILLARS } from "../lib/site.mjs";
 import { layout, escape } from "./layout.mjs";
 import { mdToHtml } from "../lib/markdown.mjs";
+import { extractQuestions } from "../lib/quality-gate.mjs";
+
+// Resolve [INTERNAL: keyword] placeholders in article body to real /articles/<slug> links.
+// Falls back to the site's /articles index when no good match is found.
+function resolveInternalLinks(md, indexHint = []) {
+  if (!md) return md;
+  const idx = Array.isArray(indexHint) ? indexHint : [];
+  return String(md).replace(/\[INTERNAL:\s*([^\]]+)\]/gi, (_, keyword) => {
+    const k = keyword.trim().toLowerCase();
+    let best = null;
+    let bestScore = 0;
+    for (const a of idx) {
+      const hay = `${a.title || ""} ${a.tags ? a.tags.join(" ") : ""} ${a.category || ""}`.toLowerCase();
+      let score = 0;
+      for (const word of k.split(/\s+/).filter(Boolean)) {
+        if (hay.includes(word)) score++;
+      }
+      if (score > bestScore) { bestScore = score; best = a; }
+    }
+    if (best && bestScore > 0) {
+      return `[${keyword.trim()}](${SITE.baseUrl}/articles/${best.slug})`;
+    }
+    return `[${keyword.trim()}](${SITE.baseUrl}/articles)`;
+  });
+}
+
+// Build TL/DR sentences from existing tldr text or from <section data-tldr="ai-overview"> block.
+function extractTldrSentences(article) {
+  const body = article.body || "";
+  const blockMatch = body.match(/<section[^>]*data-tldr="ai-overview"[^>]*>([\s\S]*?)<\/section>/i);
+  if (blockMatch) {
+    const paras = [...blockMatch[1].matchAll(/<p>([\s\S]*?)<\/p>/gi)].map((m) => m[1].replace(/<[^>]+>/g, "").trim()).filter(Boolean);
+    return paras.filter((p) => !/^TL[\/;]?DR\s*$/i.test(p));
+  }
+  if (article.tldr) {
+    const sentences = String(article.tldr)
+      .replace(/^\*+\s*TL;DR:?\s*/i, "")
+      .replace(/\s*\*+$/, "")
+      .replace(/^TL;DR:?\s*/i, "")
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    return sentences;
+  }
+  return [];
+}
 
 // ---------- HOME ----------
 // Force the live site to skip stale Bunny edge cache after we regenerate heroes;
@@ -180,12 +227,27 @@ function cleanArticleBody(md = "") {
       if (s !== before) changed = true;
     }
   }
+  // Defensive: legacy bodies may contain em-dashes. Replace with " - " so the
+  // rendered HTML stays gate-clean even before the next refresh pass touches them.
+  s = s.replace(/\s*\u2014\s*/g, " - ");
   return s.trim();
 }
 
 // ---------- ARTICLE ----------
-export function renderArticle(article) {
-  const html = mdToHtml(cleanArticleBody(article.body || ""));
+export function renderArticle(article, opts = {}) {
+  const indexHint = opts.indexHint || [];
+  // 1. Pre-process body: resolve [INTERNAL: keyword] -> real /articles/<slug> links.
+  const bodyResolved = resolveInternalLinks(article.body || "", indexHint);
+  // 2. Strip leading H1, leading inline italic TL;DR paragraph, and tonal Sanskrit closers.
+  const cleaned = cleanArticleBody(bodyResolved);
+  // 3. Detect or synthesize the TL/DR sentences for SpeakableSpecification + visible block.
+  const tldrSentences = extractTldrSentences({ ...article, body: cleaned });
+  // 4. Ensure a visible TL/DR block exists at top of rendered HTML even for older articles.
+  const hasInlineTldrBlock = /<section[^>]*data-tldr="ai-overview"/i.test(cleaned);
+  const synthTldrBlock = (!hasInlineTldrBlock && tldrSentences.length)
+    ? `<section data-tldr="ai-overview" aria-label="In short">\n<p><strong>TL;DR</strong></p>\n${tldrSentences.slice(0, 3).map((s) => `<p>${s}</p>`).join("\n")}\n</section>\n\n`
+    : "";
+  const html = mdToHtml(synthTldrBlock + cleaned);
   const hero = `<section class="hero" style="background-image:url('${escape(heroSrc(article.heroUrl))}')">
     <div class="hero__inner">
       <div class="hero__kicker">${escape(article.category || "Article")}</div>
@@ -193,67 +255,132 @@ export function renderArticle(article) {
       <div class="hero__meta">${article.readingTime || 8} min read &middot; by ${escape(SITE.author.name)}${article.publishedAt ? " &middot; " + new Date(article.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""}</div>
     </div>
   </section>`;
-  const cleanTldr = (article.tldr || "").replace(/^\*+\s*TL;DR:?\s*/i, "").replace(/\s*\*+$/, "").replace(/^TL;DR:?\s*/i, "").trim();
-  const tldrHtml = cleanTldr ? `<div class="article__tldr"><strong>TL;DR \u00b7</strong> ${escape(cleanTldr)}</div>` : "";
   const tagsHtml = (article.tags || []).map(t => `<span class="tag-pill">${escape(t)}</span>`).join("");
   const dateLong = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
-  const bylineHtml = `<div class="article__byline" style="display:flex;align-items:center;gap:12px;margin:0 0 28px;">
-    <img src="${escape(SITE.author.avatar)}" alt="${escape(SITE.author.name)}" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" loading="lazy">
-    <span>By <a href="${escape(SITE.author.url)}" rel="me">${escape(SITE.author.name)}</a>${dateLong ? " \u00b7 " + escape(dateLong) : ""}${article.readingTime ? " \u00b7 " + article.readingTime + " min read" : ""}</span>
-  </div>`;
-  const bioCard = `<div class="bio-card">
-    <img src="${escape(SITE.author.avatar)}" alt="${escape(SITE.author.name)}">
-    <div>
-      <h4>${escape(SITE.author.name)}</h4>
-      <p>${escape(SITE.author.bio)}</p>
-      <a href="${escape(SITE.author.url)}" rel="me">Read more from The Oracle Lover &rarr;</a>
+  const datePublishedIso = article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString();
+  const dateModifiedIso = article.dateModified ? new Date(article.dateModified).toISOString() : datePublishedIso;
+  const dateModifiedLong = article.dateModified ? new Date(article.dateModified).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+  // Final Pass byline: name, credential, published + modified date, reading time.
+  const bylineHtml = `<div class="article__byline" itemscope itemtype="https://schema.org/Person" style="display:flex;align-items:flex-start;gap:14px;margin:0 0 28px;padding:14px 16px;background:${SITE.palette.bioCard};border-radius:10px;">
+    <img src="${escape(SITE.author.avatar)}" alt="${escape(SITE.author.name)}" itemprop="image" width="56" height="56" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex:0 0 auto;" loading="lazy">
+    <div style="flex:1;">
+      <div style="font-weight:600;">By <a href="${escape(SITE.author.url)}" rel="me author" itemprop="url"><span itemprop="name">${escape(SITE.author.name)}</span></a></div>
+      <div style="font-size:0.92em;opacity:0.9;" itemprop="description">${escape(SITE.author.credential || SITE.author.bio)}</div>
+      <div style="font-size:0.85em;opacity:0.75;margin-top:4px;">
+        ${dateLong ? `Published <time datetime="${datePublishedIso}">${escape(dateLong)}</time>` : ""}
+        ${dateModifiedLong && dateModifiedLong !== dateLong ? ` &middot; Updated <time datetime="${dateModifiedIso}">${escape(dateModifiedLong)}</time>` : ""}
+        ${article.readingTime ? ` &middot; ${article.readingTime} min read` : ""}
+      </div>
     </div>
   </div>`;
+  const bioCard = `<aside class="bio-card" aria-label="About the author">
+    <img src="${escape(SITE.author.avatar)}" alt="${escape(SITE.author.name)}">
+    <div>
+      <h4>About ${escape(SITE.author.name)}</h4>
+      <p>${escape(SITE.author.bio)}</p>
+      <p><a href="${escape(SITE.author.url)}" rel="me" target="_blank">Read more from The Oracle Lover &rarr;</a></p>
+    </div>
+  </aside>`;
   const body = `
-    <article class="article">
+    <article class="article" itemscope itemtype="https://schema.org/Article">
       <div class="container">
         ${bylineHtml}
-        ${tldrHtml}
-        ${html}
+        <div itemprop="articleBody">${html}</div>
         ${bioCard}
         <div style="margin-top:24px">${tagsHtml}</div>
       </div>
     </article>`;
+
+  // Compose JSON-LD graph.
+  const wordCount = (article.body || "").trim().split(/\s+/).filter(Boolean).length;
+  const articleNode = {
+    "@type": "Article",
+    "@id": `${SITE.baseUrl}/articles/${article.slug}#article`,
+    headline: article.title,
+    description: article.metaDescription || (tldrSentences[0] || ""),
+    image: [article.heroUrl || SITE.defaultOgImage],
+    datePublished: datePublishedIso,
+    dateModified: dateModifiedIso,
+    inLanguage: "en-US",
+    isAccessibleForFree: true,
+    articleSection: article.category || "Articles",
+    keywords: (article.tags || []).join(", "),
+    author: { "@id": `${SITE.baseUrl}#person` },
+    publisher: { "@id": `${SITE.baseUrl}#org` },
+    mainEntityOfPage: `${SITE.baseUrl}/articles/${article.slug}`,
+    wordCount,
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: [`section[data-tldr="ai-overview"]`, `h1`, `article .article__tldr`],
+    },
+  };
+  const breadcrumbNode = {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE.baseUrl },
+      { "@type": "ListItem", position: 2, name: "Articles", item: `${SITE.baseUrl}/articles` },
+      ...(article.category ? [{ "@type": "ListItem", position: 3, name: article.category, item: `${SITE.baseUrl}/articles?category=${encodeURIComponent(article.category)}` }] : []),
+      { "@type": "ListItem", position: article.category ? 4 : 3, name: article.title, item: `${SITE.baseUrl}/articles/${article.slug}` },
+    ],
+  };
+  // FAQ schema lift: H2/H3 question headings -> FAQPage.
+  const faqs = extractQuestions(article.body || "", 6);
+  const faqNode = faqs.length >= 2 ? {
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a.replace(/[*_`]/g, "").slice(0, 800) },
+    })),
+  } : null;
+  const personNode = {
+    "@type": "Person",
+    "@id": `${SITE.baseUrl}#person`,
+    name: SITE.author.name,
+    url: SITE.author.url,
+    image: SITE.author.avatar,
+    description: SITE.author.bio,
+    jobTitle: SITE.author.title,
+    knowsAbout: [
+      "introverted children", "highly sensitive child", "school anxiety",
+      "sensory processing", "IEPs", "504 plans", "temperament", "autism",
+      "ADHD", "neurodivergent parenting",
+    ],
+    sameAs: SITE.author.sameAs || [SITE.author.url],
+  };
+  const orgNode = {
+    "@type": "Organization",
+    "@id": `${SITE.baseUrl}#org`,
+    name: SITE.name,
+    url: SITE.baseUrl,
+    logo: SITE.defaultOgImage,
+    sameAs: [SITE.author.url],
+  };
+  const websiteNode = {
+    "@type": "WebSite",
+    "@id": `${SITE.baseUrl}#website`,
+    url: SITE.baseUrl,
+    name: SITE.name,
+    publisher: { "@id": `${SITE.baseUrl}#org` },
+  };
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Article",
-        "@id": `${SITE.baseUrl}/articles/${article.slug}#article`,
-        headline: article.title,
-        description: article.metaDescription || article.tldr || "",
-        image: [article.heroUrl || SITE.defaultOgImage],
-        datePublished: article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString(),
-        dateModified: article.dateModified ? new Date(article.dateModified).toISOString() : (article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString()),
-        author: { "@id": `${SITE.baseUrl}#person` },
-        publisher: { "@id": `${SITE.baseUrl}#org` },
-        mainEntityOfPage: `${SITE.baseUrl}/articles/${article.slug}`,
-        wordCount: (article.body || "").trim().split(/\s+/).length,
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: SITE.baseUrl },
-          { "@type": "ListItem", position: 2, name: "Articles", item: `${SITE.baseUrl}/articles` },
-          { "@type": "ListItem", position: 3, name: article.title, item: `${SITE.baseUrl}/articles/${article.slug}` },
-        ],
-      },
-    ],
+    "@graph": [articleNode, breadcrumbNode, ...(faqNode ? [faqNode] : []), personNode, orgNode, websiteNode],
   };
   return layout({
     title: article.title,
-    description: article.metaDescription || article.tldr || "",
+    description: article.metaDescription || (tldrSentences[0] || ""),
     path: `/articles/${article.slug}`,
     ogImage: article.ogImage || article.heroUrl,
     showHero: true,
     hero,
     body,
     jsonLd,
+    ogType: "article",
+    publishedTime: datePublishedIso,
+    modifiedTime: dateModifiedIso,
+    articleSection: article.category || "",
+    authorName: SITE.author.name,
   });
 }
 
@@ -478,6 +605,39 @@ export function renderPrivacy() {
     description: "Privacy policy and affiliate disclosure for A Quiet Classroom.",
     path: "/privacy",
     body,
+  });
+}
+
+export function renderNewsletter({ ok = false, error = "", email = "" } = {}) {
+  const status = ok ? `<div role="status" style="padding:18px;background:#e6f4ea;border-radius:10px;margin-bottom:20px;"><strong>Subscribed.</strong> ${escape(email)} is on the list. Watch your inbox for the welcome note.</div>` : "";
+  const errBox = error ? `<div role="alert" style="padding:14px;background:#fdecea;border-radius:10px;margin-bottom:20px;">${escape(error)}</div>` : "";
+  const body = `
+    <section class="container intro-block">
+      <div class="intro-block__kicker">Newsletter</div>
+      <h2 class="intro-block__title">Quiet notes for parents of sensitive kids.</h2>
+      <p class="intro-block__lede">Once a week. New essays, new herbs, new IEP scripts. No spam, no third-party trackers, unsubscribe with one click.</p>
+    </section>
+    <section class="container" style="max-width:560px;">
+      ${status}
+      ${errBox}
+      <form method="post" action="/newsletter/subscribe" style="display:grid;gap:12px;">
+        <label>Name (optional)
+          <input type="text" name="name" autocomplete="name" maxlength="100" style="display:block;width:100%;padding:10px;border:1px solid #ccd;border-radius:8px;">
+        </label>
+        <label>Email
+          <input type="email" name="email" required autocomplete="email" style="display:block;width:100%;padding:10px;border:1px solid #ccd;border-radius:8px;">
+        </label>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;" aria-hidden="true">
+        <button type="submit" style="padding:12px 18px;background:${SITE.palette.accent};color:white;border:0;border-radius:8px;font-weight:600;cursor:pointer;">Subscribe</button>
+      </form>
+      <p style="font-size:0.9em;opacity:0.7;margin-top:18px;">We store your email on our private storage to send the newsletter. We do not sell or share it. ${escape(SITE.affiliateDisclosure)}</p>
+    </section>`;
+  return layout({
+    title: "Newsletter",
+    description: "Quiet notes for parents of sensitive kids. Weekly. No third-party trackers.",
+    path: "/newsletter",
+    body,
+    bodyClass: "page-newsletter",
   });
 }
 

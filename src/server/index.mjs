@@ -30,9 +30,11 @@ import {
   renderRecommended,
   renderAbout,
   renderPrivacy,
+  renderNewsletter,
   render404,
 } from "./pages.mjs";
-import { buildSitemap, buildRobots, buildLlmsTxt, buildAiTxt, buildRss } from "./feeds.mjs";
+import { buildSitemap, buildRobots, buildLlmsTxt, buildLlmsFullTxt, buildAiTxt, buildRss } from "./feeds.mjs";
+import { uploadJsonToBunny, fetchJsonFromBunnyOrigin } from "../lib/bunny.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -78,7 +80,8 @@ app.get("/articles", async (req, res) => {
 app.get("/articles/:slug", async (req, res) => {
   const a = await readArticle(req.params.slug);
   if (!a || a.status !== "published") return res.status(404).set("Content-Type", "text/html").send(render404({ path: req.path }));
-  res.set("Content-Type", "text/html; charset=utf-8").send(renderArticle(a));
+  const idx = await getPublished();
+  res.set("Content-Type", "text/html; charset=utf-8").send(renderArticle(a, { indexHint: idx }));
 });
 
 app.get("/herbs", (req, res) => {
@@ -105,13 +108,43 @@ app.get("/recommended", (req, res) => {
 app.get("/about", (req, res) => res.set("Content-Type", "text/html; charset=utf-8").send(renderAbout()));
 app.get("/privacy", (req, res) => res.set("Content-Type", "text/html; charset=utf-8").send(renderPrivacy()));
 
+// Newsletter: signup form + JSON-on-Bunny store. No third-party tracker, no SOVRN.
+app.get("/newsletter", (req, res) => res.set("Content-Type", "text/html; charset=utf-8").send(renderNewsletter()));
+app.use("/newsletter/subscribe", express.urlencoded({ extended: false }));
+app.use("/newsletter/subscribe", express.json());
+app.post("/newsletter/subscribe", async (req, res) => {
+  try {
+    const email = String((req.body && req.body.email) || "").trim().toLowerCase();
+    const name = String((req.body && req.body.name) || "").trim().slice(0, 100);
+    const ts = Date.now();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).set("Content-Type", "text/html; charset=utf-8").send(renderNewsletter({ error: "Please enter a valid email." }));
+    }
+    // Honeypot
+    if (req.body && req.body.website) return res.status(204).end();
+    const KEY = "newsletter/subscribers.json";
+    let list = [];
+    try { list = await fetchJsonFromBunnyOrigin(KEY); } catch { list = []; }
+    if (!Array.isArray(list)) list = [];
+    if (!list.find((e) => e.email === email)) {
+      list.push({ email, name, ts, ip: (req.headers["x-forwarded-for"] || req.ip || "").toString().split(",")[0].trim(), ua: (req.headers["user-agent"] || "").slice(0, 300) });
+      await uploadJsonToBunny(KEY, list);
+    }
+    res.set("Content-Type", "text/html; charset=utf-8").send(renderNewsletter({ ok: true, email }));
+  } catch (e) {
+    console.error("[newsletter] error:", e);
+    res.status(500).set("Content-Type", "text/html; charset=utf-8").send(renderNewsletter({ error: "Something went wrong. Try again in a moment." }));
+  }
+});
+
 // ---------- FEEDS ----------
 app.get("/sitemap.xml", async (req, res) => {
   res.set("Content-Type", "application/xml; charset=utf-8").send(await buildSitemap());
 });
-app.get("/robots.txt", (req, res) => res.set("Content-Type", "text/plain").send(buildRobots()));
-app.get("/llms.txt", async (req, res) => res.set("Content-Type", "text/plain").send(await buildLlmsTxt()));
-app.get("/ai.txt", (req, res) => res.set("Content-Type", "text/plain").send(buildAiTxt()));
+app.get("/robots.txt", (req, res) => res.set("Content-Type", "text/plain; charset=utf-8").send(buildRobots()));
+app.get("/llms.txt", async (req, res) => res.set("Content-Type", "text/markdown; charset=utf-8").send(await buildLlmsTxt()));
+app.get("/llms-full.txt", async (req, res) => res.set("Content-Type", "text/plain; charset=utf-8").send(await buildLlmsFullTxt()));
+app.get("/ai.txt", (req, res) => res.set("Content-Type", "text/plain; charset=utf-8").send(buildAiTxt()));
 app.get(["/rss.xml", "/feed.xml"], async (req, res) => res.set("Content-Type", "application/rss+xml").send(await buildRss()));
 app.get("/.well-known/health", (req, res) => res.json({ ok: true, name: SITE.name, time: Date.now() }));
 
@@ -149,6 +182,26 @@ if (process.env.AUTO_GEN_ENABLED === "true") {
 
 // Sitemap regen "ping": warm the cache hourly
 cron.schedule("0 0 * * * *", async () => { try { await buildSitemap(); } catch {} });
+
+// Quarterly refresh: 1st of each month at 03:30 UTC, refresh the 20 oldest
+// published articles via Claude. Skips silently if CLAUDE_API_KEY is unset.
+if (process.env.CLAUDE_API_KEY) {
+  cron.schedule("30 3 1 * *", async () => {
+    try {
+      console.log("[cron] quarterly refresh starting");
+      const { spawn } = await import("node:child_process");
+      const child = spawn(process.execPath, ["scripts/quarterly-refresh.mjs"], {
+        env: { ...process.env, COUNT: process.env.QUARTERLY_REFRESH_COUNT || "20" },
+        stdio: "inherit",
+        detached: false,
+      });
+      child.on("exit", (code) => console.log(`[cron] quarterly refresh exited code=${code}`));
+    } catch (e) { console.error("[cron] quarterly refresh failed:", e); }
+  });
+  console.log("[cron] quarterly refresh scheduled (1st of month 03:30 UTC)");
+} else {
+  console.log("[cron] CLAUDE_API_KEY missing; quarterly refresh disabled");
+}
 
 const PORT = parseInt(process.env.PORT || "8080", 10);
 const HOST = "0.0.0.0"; // Railway requires bind to 0.0.0.0, not localhost

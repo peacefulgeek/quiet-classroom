@@ -12,10 +12,15 @@ export const SITE = {
   author: {
     name: "The Oracle Lover",
     title: "The Oracle Lover, Intuitive Educator and Oracle Guide",
+    credential: "Researcher-parent and intuitive educator. Years of IEP meetings, temperament-literature reading, and one-on-one consults with parents of introverted, anxious, and highly sensitive children.",
     bio:
       "The Oracle Lover is a researcher-parent who has done the IEP meetings and read the temperament literature. She writes plainly for parents of sensitive children. No catastrophizing, no toxic positivity. She validates the exhaustion and gives you tools you can use Monday morning.",
     url: "https://theoraclelover.com",
     avatar: "https://quiet-classroom.b-cdn.net/brand/oracle-lover-avatar.webp",
+    sameAs: [
+      "https://theoraclelover.com",
+      "https://theoraclelover.com/about",
+    ],
   },
   amazonTag: process.env.AMAZON_TAG || "peacefulgeek-20",
   // Color palette per per-site spec

@@ -73,3 +73,84 @@
 - [ ] Confirm crons fire with no cap; 30-100 published, 400+ gated
 - [ ] Push final state to peacefulgeek/quiet-classroom
 - [ ] 10x end-to-end live-domain verification + final report
+
+
+## 2026-05-28 — BacklinkWebsites Final Pass scope
+
+Status legend at delivery: FIXED / VERIFIED
+ ALREADY GOOD / BLOCKED
+
+### Engine swap to Claude
+- [ ] Store CLAUDE_API_KEY in Railway secrets
+- [ ] Build Claude client targeting model `claude-sonnet-4-6`
+- [ ] Switch all article generation, rewrites, refresh crons to Claude
+
+### Quality gate
+- [ ] Banned-words rejection (delve, tapestry, paradigm, synergy, leverage, unlock, empower, utilize, pivotal, embark, underscore, paramount, seamlessly, robust, beacon, foster, elevate, curate, curated, bespoke, resonate, harness, intricate, plethora, myriad, comprehensive, transformative, groundbreaking, innovative, cutting-edge, revolutionary, state-of-the-art, ever-evolving, profound, holistic, nuanced, multifaceted, stakeholders, ecosystem, landscape, realm, sphere, domain, furthermore, moreover, additionally, consequently, subsequently, thereby, streamline, optimize, facilitate, amplify, catalyze)
+- [ ] Banned-phrases rejection ("it's important to note," "in conclusion," "in summary," "in the realm of," "dive deep into," "at the end of the day," "in today's fast-paced world," "plays a crucial role," "a testament to," "when it comes to," "cannot be overstated," "needless to say," "first and foremost," "last but not least.")
+- [ ] No em-dashes anywhere; only " - "
+- [ ] Contractions throughout, varied sentence length
+- [ ] >=2 conversational openers per article
+- [ ] First-person OR direct-address (commit one)
+- [ ] Concrete-specifics check
+
+### E-E-A-T (every published article)
+- [ ] 3-sentence TL/DR in `<section data-tldr="ai-overview" aria-label="In short">` (each <=32 words, declarative, no questions)
+- [ ] First-hand experience phrasing in body
+- [ ] >=3 internal links varied anchor text in prose
+- [ ] >=1 outbound link to authoritative source with rel="nofollow noopener" target="_blank"
+- [ ] Visible last-updated date in byline with `<time datetime>`
+- [ ] Author byline at bottom: credential + datetime + 1-2 sentences warm topical self-ref
+
+### AEO and JSON-LD
+- [ ] Canonical with UTM/fbclid/gclid/mc_eid stripped on every public page
+- [ ] Robots meta `index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1`
+- [ ] OG and Twitter card meta complete on every page
+- [ ] Article JSON-LD with all listed fields including SpeakableSpecification -> TL/DR
+- [ ] BreadcrumbList JSON-LD per article
+- [ ] FAQPage JSON-LD auto from Q-shaped headings (cap 6, only when real)
+- [ ] HowTo JSON-LD when ordered list of steps (mutually exclusive with MedicalCondition)
+- [ ] WebSite JSON-LD + SearchAction on homepage
+- [ ] Organization JSON-LD sitewide
+- [ ] AboutPage and Organization on /about
+- [ ] CollectionPage and ItemList on /articles
+- [ ] Person JSON-LD for author with sameAs to intermediary site
+- [ ] /sitemap.xml ISO-8601 newest-first published only
+- [ ] /robots.txt with all AI crawlers allowed; advertise sitemap and llms files
+- [ ] /llms.txt markdown index grouped by category
+- [ ] /llms-full.txt full-corpus plain text frontmatter-delimited
+- [ ] SSR head verified via curl with GPTBot UA
+
+### Bunny-only article storage
+- [ ] Articles stored at `/articles/{slug}.json` on Bunny
+- [ ] DB has only metadata + bunny_url (no body)
+- [ ] All read paths fetch body from Bunny
+- [ ] Sitemap, llms.txt, llms-full.txt, public routes all fetch from Bunny
+
+### Counts and dates
+- [ ] DB shows 30-100 published, 400-500 queued (top up via Claude + gate if short)
+- [ ] Backdate every published article: published_at randomized across prior 3 months
+
+### Refresh cron (quarterly)
+- [ ] Rewrite via Claude -> gate -> on pass: update Bunny body + byline date + dateModified
+- [ ] On fail: keep body, only bump timestamp
+
+### Bylines
+- [ ] Every published article has warm topical byline (credential + datetime + 1-2 topical sentences)
+
+### Leakage and integrations
+- [ ] No Paul Wagner / paulwagner.com anywhere
+- [ ] Intermediary-site Person.url robust
+- [ ] Remove SOVRN code (GROW present or coming)
+- [ ] Newsletter signup writes to JSON file on Bunny
+
+### Validation
+- [ ] Schema.org validator pass
+- [ ] curl -I /llms.txt -> 200 + text/markdown
+- [ ] curl with GPTBot UA -> full head before React shell
+- [ ] /sitemap.xml -> 200, published only
+- [ ] /robots.txt names all AI crawlers
+
+### Push
+- [ ] Delete any zips from repo
+- [ ] Push using github-push-workflow skill
